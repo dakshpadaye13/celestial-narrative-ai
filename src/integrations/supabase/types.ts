@@ -14,7 +14,269 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      birth_charts: {
+        Row: {
+          ascendant_degree: number
+          ascendant_sign: number
+          ayanamsa: number
+          birth_profile_id: string
+          calculated_at: string
+          dasha: Json
+          engine_version: string
+          id: string
+          moon_nakshatra: number
+          moon_sign: number
+          planets: Json
+          sun_sign: number
+          user_id: string
+        }
+        Insert: {
+          ascendant_degree: number
+          ascendant_sign: number
+          ayanamsa: number
+          birth_profile_id: string
+          calculated_at?: string
+          dasha: Json
+          engine_version: string
+          id?: string
+          moon_nakshatra: number
+          moon_sign: number
+          planets: Json
+          sun_sign: number
+          user_id: string
+        }
+        Update: {
+          ascendant_degree?: number
+          ascendant_sign?: number
+          ayanamsa?: number
+          birth_profile_id?: string
+          calculated_at?: string
+          dasha?: Json
+          engine_version?: string
+          id?: string
+          moon_nakshatra?: number
+          moon_sign?: number
+          planets?: Json
+          sun_sign?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "birth_charts_birth_profile_id_fkey"
+            columns: ["birth_profile_id"]
+            isOneToOne: false
+            referencedRelation: "birth_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      birth_profiles: {
+        Row: {
+          astrology_system: string
+          birth_date: string
+          birth_instant_utc: string | null
+          birth_time: string | null
+          created_at: string
+          full_name: string
+          id: string
+          is_primary: boolean
+          label: string
+          latitude: number
+          longitude: number
+          place_city: string
+          place_country: string
+          place_region: string | null
+          time_known: boolean
+          timezone: string
+          tz_offset_minutes: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          astrology_system?: string
+          birth_date: string
+          birth_instant_utc?: string | null
+          birth_time?: string | null
+          created_at?: string
+          full_name: string
+          id?: string
+          is_primary?: boolean
+          label?: string
+          latitude: number
+          longitude: number
+          place_city: string
+          place_country: string
+          place_region?: string | null
+          time_known?: boolean
+          timezone: string
+          tz_offset_minutes?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          astrology_system?: string
+          birth_date?: string
+          birth_instant_utc?: string | null
+          birth_time?: string | null
+          created_at?: string
+          full_name?: string
+          id?: string
+          is_primary?: boolean
+          label?: string
+          latitude?: number
+          longitude?: number
+          place_city?: string
+          place_country?: string
+          place_region?: string | null
+          time_known?: boolean
+          timezone?: string
+          tz_offset_minutes?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      conversations: {
+        Row: {
+          birth_profile_id: string | null
+          category: string
+          created_at: string
+          id: string
+          title: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          birth_profile_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          birth_profile_id?: string | null
+          category?: string
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_birth_profile_id_fkey"
+            columns: ["birth_profile_id"]
+            isOneToOne: false
+            referencedRelation: "birth_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          chart_factors: Json | null
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          chart_factors?: Json | null
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          chart_factors?: Json | null
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          astrology_system: string
+          consent_store_birth_data: boolean
+          created_at: string
+          display_name: string | null
+          id: string
+          preferred_language: string
+          updated_at: string
+        }
+        Insert: {
+          astrology_system?: string
+          consent_store_birth_data?: boolean
+          created_at?: string
+          display_name?: string | null
+          id: string
+          preferred_language?: string
+          updated_at?: string
+        }
+        Update: {
+          astrology_system?: string
+          consent_store_birth_data?: boolean
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          preferred_language?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saved_insights: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          message_id: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_insights_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

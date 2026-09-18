@@ -1,69 +1,218 @@
+import { useEffect } from "react";
 import { ZODIAC_INFO } from "@/lib/astro/reference";
+import { motion, useMotionValue, useSpring, useTime, useTransform } from "framer-motion";
 
-/** Decorative rotating zodiac wheel + celestial orb for the hero. */
-export function HeroOrb() {
-  const R = 190;
-  const c = 210;
+function OrbitingGem({ index, R, cx, cy, z }: { index: number; R: number; cx: number; cy: number; z: any }) {
+  const time = useTime();
+  const durationMs = 80000; // 80 seconds per revolution
+
+  const angle = useTransform(time, (t) => {
+    const progress = (t % durationMs) / durationMs;
+    return progress * Math.PI * 2 + (index * 30 - 90) * (Math.PI / 180);
+  });
+
+  const x = useTransform(angle, (a) => cx + Math.cos(a) * R);
+  const y = useTransform(angle, (a) => cy + Math.sin(a) * (R * 0.32)); // 0.32 controls the tilt of the ellipse
+
+  const scale = useTransform(angle, (a) => {
+    const depth = Math.sin(a);
+    return 1 + depth * 0.4; // Scale ranges from 0.6 (back) to 1.4 (front)
+  });
+
+  const opacity = useTransform(angle, (a) => {
+    const depth = Math.sin(a);
+    return 0.3 + (depth + 1) * 0.35; // Opacity ranges from 0.3 (back) to 1.0 (front)
+  });
+
   return (
-    <div aria-hidden="true" className="relative mx-auto w-full max-w-[420px]">
-      <svg viewBox="0 0 420 420" className="w-full">
+    <motion.g style={{ x, y, scale, opacity, transformOrigin: "0px 0px" }}>
+      <g filter="url(#gem-glow)">
+        <polygon
+          points="0,-24 20,-12 20,12 0,24 -20,12 -20,-12"
+          fill="url(#gem-grad)"
+          stroke="url(#gem-edge)"
+          strokeWidth="1.5"
+        />
+        <polygon points="0,-24 20,-12 0,0 -20,-12" fill="white" opacity="0.15" />
+        <polygon points="20,-12 20,12 0,0" fill="white" opacity="0.05" />
+        <polygon points="0,24 -20,12 0,0" fill="black" opacity="0.25" />
+
+        <text
+          x={0}
+          y={4}
+          textAnchor="middle"
+          alignmentBaseline="middle"
+          className="fill-white text-[20px] font-sans drop-shadow-md"
+          style={{ textShadow: "0 0 8px rgba(255,255,255,0.8)" }}
+        >
+          {z.glyph}
+        </text>
+      </g>
+
+      <text
+        x={0}
+        y={42}
+        textAnchor="middle"
+        className="fill-[#fdf5e6] text-[12px] tracking-[0.15em] uppercase font-sans drop-shadow-sm font-semibold"
+      >
+        {z.sign}
+      </text>
+    </motion.g>
+  );
+}
+
+/** Highly detailed, realistic 3D orbital zodiac wheel + static crescent moon for the hero. */
+export function HeroOrb() {
+  const R = 320; 
+  const cx = 400;
+  const cy = 300;
+
+  const mouseX = useMotionValue(0);
+  const mouseY = useMotionValue(0);
+
+  const smoothX = useSpring(mouseX, { damping: 25, stiffness: 100, mass: 1 });
+  const smoothY = useSpring(mouseY, { damping: 25, stiffness: 100, mass: 1 });
+
+  const smoothXOuter = useSpring(mouseX, { damping: 30, stiffness: 80, mass: 1.5 });
+  const smoothYOuter = useSpring(mouseY, { damping: 30, stiffness: 80, mass: 1.5 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const x = (e.clientX / window.innerWidth) * 2 - 1;
+      const y = (e.clientY / window.innerHeight) * 2 - 1;
+      mouseX.set(x * 18);
+      mouseY.set(y * 18);
+    };
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, [mouseX, mouseY]);
+
+  const renderOrbitRings = () => (
+    <motion.g style={{ scaleY: 0.32, transformOrigin: `${cx}px ${cy}px` }}>
+      <circle cx={cx} cy={cy} r={R} className="fill-none stroke-[#ffffff]" strokeWidth="2" strokeOpacity="0.5" filter="url(#glow-sm)" />
+      <circle cx={cx} cy={cy} r={R} className="fill-none stroke-[#fdf5e6]" strokeWidth="4" strokeOpacity="0.3" />
+      <circle cx={cx} cy={cy} r={R - 16} className="fill-none stroke-[#ffebcd]" strokeWidth="1" strokeOpacity="0.4" />
+      <circle cx={cx} cy={cy} r={R + 12} className="fill-none stroke-[#ffffff]" strokeWidth="6" strokeOpacity="0.15" />
+    </motion.g>
+  );
+
+  const renderGems = () => (
+    <>
+      {ZODIAC_INFO.map((z, i) => (
+        <OrbitingGem key={z.sign} index={i} R={R} cx={cx} cy={cy} z={z} />
+      ))}
+    </>
+  );
+
+  const renderHalf = (clipId: string) => (
+    <g clipPath={`url(#${clipId})`}>
+      <motion.g style={{ x: smoothXOuter, y: smoothYOuter }}>
+        {renderOrbitRings()}
+        {renderGems()}
+      </motion.g>
+    </g>
+  );
+
+  return (
+    <div aria-hidden="true" className="relative mx-auto w-full max-w-[800px] lg:-ml-10">
+      <svg viewBox="0 0 800 600" className="w-full h-auto drop-shadow-2xl overflow-visible">
         <defs>
-          <radialGradient id="orb" cx="42%" cy="36%">
-            <stop offset="0%" stopColor="oklch(0.86 0.06 86)" stopOpacity="0.95" />
-            <stop offset="45%" stopColor="oklch(0.6 0.08 300)" stopOpacity="0.55" />
-            <stop offset="100%" stopColor="oklch(0.2 0.05 278)" stopOpacity="0.9" />
+          <filter id="moon-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="18" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+          
+          <filter id="glow-sm" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="4" result="blur" />
+            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+          </filter>
+
+          <filter id="gem-glow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="0" dy="0" stdDeviation="12" floodColor="#b864ff" floodOpacity="0.9"/>
+          </filter>
+
+          {/* FAT CRESCENT MASK */}
+          <mask id="crescent-mask">
+            <rect width="100%" height="100%" fill="white" />
+            {/* Shifted much further right to create a fatter crescent on the left */}
+            <circle cx={cx + 60} cy={cy - 10} r={140} fill="black" filter="blur(3px)" />
+          </mask>
+          
+          <linearGradient id="gem-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#d88cff" />
+            <stop offset="50%" stopColor="#8a2be2" />
+            <stop offset="100%" stopColor="#4b0082" />
+          </linearGradient>
+
+          <linearGradient id="gem-edge" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
+            <stop offset="50%" stopColor="#e0a3ff" stopOpacity="0.4" />
+            <stop offset="100%" stopColor="#ffffff" stopOpacity="0.3" />
+          </linearGradient>
+
+          <radialGradient id="nebula" cx="60%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ffb067" stopOpacity="0.15" />
+            <stop offset="35%" stopColor="#8a2be2" stopOpacity="0.1" />
+            <stop offset="100%" stopColor="#000000" stopOpacity="0" />
           </radialGradient>
-          <radialGradient id="glow" cx="50%" cy="50%">
-            <stop offset="0%" stopColor="oklch(0.795 0.093 84)" stopOpacity="0.28" />
-            <stop offset="100%" stopColor="oklch(0.795 0.093 84)" stopOpacity="0" />
-          </radialGradient>
+
+          {/* Split the orbit horizontally at Y=300 */}
+          <clipPath id="back-half">
+            <rect x="0" y="0" width="800" height={cy} />
+          </clipPath>
+          <clipPath id="front-half">
+            <rect x="0" y={cy} width="800" height={600} />
+          </clipPath>
         </defs>
 
-        <circle cx={c} cy={c} r={200} fill="url(#glow)" />
+        {/* Ambient Deep Space Nebula */}
+        <motion.rect 
+          x="0" y="0" width="800" height="600" 
+          fill="url(#nebula)" 
+          style={{ x: smoothXOuter, y: smoothYOuter }}
+          className="pointer-events-none"
+        />
 
-        <g className="slow-spin" style={{ transformOrigin: "210px 210px" }}>
-          <circle cx={c} cy={c} r={R} className="fill-none stroke-gold/25" />
-          <circle cx={c} cy={c} r={R - 26} className="fill-none stroke-gold/12" />
-          {ZODIAC_INFO.map((z, i) => {
-            const a = ((i * 30 + 15 - 90) * Math.PI) / 180;
-            return (
-              <text
-                key={z.sign}
-                x={c + Math.cos(a) * (R - 13)}
-                y={c + Math.sin(a) * (R - 13) + 5}
-                textAnchor="middle"
-                className="fill-lavender/70 text-[14px]"
-              >
-                {z.glyph}
-              </text>
-            );
-          })}
-          {Array.from({ length: 12 }, (_, i) => {
-            const a = ((i * 30 - 90) * Math.PI) / 180;
-            return (
-              <line
-                key={i}
-                x1={c + Math.cos(a) * (R - 26)}
-                y1={c + Math.sin(a) * (R - 26)}
-                x2={c + Math.cos(a) * R}
-                y2={c + Math.sin(a) * R}
-                className="stroke-gold/20"
-              />
-            );
-          })}
-        </g>
+        {/* BACK HALF OF ORBIT */}
+        {renderHalf("back-half")}
 
-        <g className="reverse-spin" style={{ transformOrigin: "210px 210px" }}>
-          <circle cx={c} cy={c} r={132} className="fill-none stroke-lavender/15" strokeDasharray="3 9" />
-          <circle cx={c + 132} cy={c} r={4} className="fill-gold/80" />
-          <circle cx={c - 132} cy={c} r={2.6} className="fill-lavender/80" />
-        </g>
+        {/* STATIC FAT WHITE CRESCENT MOON */}
+        <motion.g style={{ x: smoothX, y: smoothY }} filter="url(#moon-glow)">
+          <circle 
+            cx={cx} 
+            cy={cy} 
+            r={140} 
+            fill="#ffffff" 
+            mask="url(#crescent-mask)" 
+          />
+          <circle 
+            cx={cx} 
+            cy={cy} 
+            r={140} 
+            fill="#ffebcd" 
+            opacity="0.6"
+            mask="url(#crescent-mask)" 
+            filter="blur(15px)"
+          />
+        </motion.g>
 
-        <circle cx={c} cy={c} r={92} fill="url(#orb)" />
-        <circle cx={c} cy={c} r={92} className="fill-none stroke-gold/30" />
-        <circle cx={c - 26} cy={c - 30} r={13} className="fill-midnight/40" />
-        <circle cx={c + 22} cy={c + 18} r={20} className="fill-midnight/25" />
-        <circle cx={c + 8} cy={c - 44} r={7} className="fill-midnight/30" />
+        {/* FRONT HALF OF ORBIT */}
+        {renderHalf("front-half")}
+
+        {/* Foreground Stars */}
+        <motion.g style={{ x: smoothX, y: smoothY }}>
+          {Array.from({ length: 20 }).map((_, i) => (
+             <motion.circle 
+               key={i}
+               cx={cx + Math.cos(i * 47) * (200 + Math.random() * 150)} 
+               cy={cy + Math.sin(i * 47) * (200 + Math.random() * 150)} 
+               r={Math.random() * 1.5 + 0.5} 
+               className="fill-[#fdf5e6]"
+               animate={{ opacity: [0.1, 0.9, 0.1] }}
+               transition={{ duration: 2 + Math.random() * 3, repeat: Infinity, ease: "easeInOut", delay: Math.random() * 2 }}
+             />
+          ))}
+        </motion.g>
       </svg>
     </div>
   );
